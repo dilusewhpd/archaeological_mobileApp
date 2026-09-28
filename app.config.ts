@@ -16,7 +16,6 @@ const config: ExpoConfig = {
   },
   android: {
     permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "CAMERA", "READ_MEDIA_IMAGES"],
-    usesCleartextTraffic: true,
     ...(process.env.GOOGLE_MAPS_API_KEY ? {
       config: { googleMaps: { apiKey: process.env.GOOGLE_MAPS_API_KEY } },
     } : {}),
