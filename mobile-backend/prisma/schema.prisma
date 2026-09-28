@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  //output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                 String   @id @default(uuid()) @db.Uuid
+  firstName          String
+  lastName           String
+  email              String   @unique
+  passwordHash       String
+  isActive           Boolean  @default(true)
+  mustChangePassword Boolean  @default(true)
+  roleId             String   @db.Uuid
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  role               Role     @relation(fields: [roleId], references: [id])
+
+  createdSites       Site[]                @relation("CreatedSites")
+  approvedSites      Site[]                @relation("ApprovedSites")
+  updatedSites       Site[] @relation("UpdatedSites")
+  uploadedPhotos     SitePhoto[]
+  uploadedReports    SiteReport[]
+  siteApprovalLogs   SiteWorkflowHistory[]
+
+  @@index([roleId])
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+}
+
+model Site {
+  id                     String   @id @default(uuid()) @db.Uuid
+  siteCode               String   @unique
+
+  name                   String
+  description            String?  @db.Text
+
+  province               String
+  district               String
+  divisionalSecretariat  String
+
+  latitude               Decimal  @db.Decimal(10, 7)
+  longitude              Decimal  @db.Decimal(10, 7)
+
+  historicalPeriod       HistoricalPeriod
+  siteType               SiteType
+
+  landUse                String
+  terrain                String
+
+  distanceToRiver        Float?
+  rainfall               Float?
+  proximityToDevelopment Float?
+
+  status                 SiteStatus @default(DRAFT)
+
+  submittedAt            DateTime?
+
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+
+  rejectionReason        String? @db.Text
+
+  createdById            String @db.Uuid
+  approvedById           String? @db.Uuid
+
+  createdBy             User @relation("CreatedSites", fields: [createdById], references: [id])
+  approvedBy            User? @relation("ApprovedSites", fields: [approvedById], references: [id])
+
+  photos                SitePhoto[]
+  reports               SiteReport[]
+  approvalHistory       SiteWorkflowHistory[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  deletedAt             DateTime?
+
+  updatedById           String? @db.Uuid
+  updatedBy             User? @relation("UpdatedSites", fields: [updatedById], references: [id])
+
+  @@index([status])
+  @@index([province])
+  @@index([district])
+  @@index([createdById])
+  @@index([approvedById])
+  @@index([updatedById])
+}
+
+model SitePhoto {
+  id              String @id @default(uuid()) @db.Uuid
+  siteId          String @db.Uuid
+  imageUrl        String
+  caption         String?
+  uploadedById    String @db.Uuid
+  site            Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  uploadedBy      User @relation(fields: [uploadedById], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([siteId])
+}
+
+model SiteReport {
+  id            String @id @default(uuid()) @db.Uuid
+  siteId        String @db.Uuid
+  title         String
+  description   String? @db.Text
+  fileUrl       String
+  uploadedById  String @db.Uuid
+  site          Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  uploadedBy    User @relation(fields: [uploadedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([siteId])
+}
+
+model SiteWorkflowHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  siteId          String   @db.Uuid
+  site            Site     @relation(fields: [siteId], references: [id])
+  action          SiteWorkflowAction
+  remarks         String?
+  performedById   String @db.Uuid
+  performedBy     User   @relation(fields: [performedById], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([siteId])
+  @@index([performedById])
+}
+
+enum SiteStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SiteWorkflowAction {
+  CREATED
+  UPDATED
+  SUBMITTED
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum HistoricalPeriod {
+  PREHISTORIC
+  PROTOHISTORIC
+  ANURADHAPURA
+  POLONNARUWA
+  DAMBADENIYA
+  YAPAHUWA
+  KURUNEGALA
+  GAMPOLA
+  KOTTE
+  KANDYAN
+  COLONIAL
+  MODERN
+}
+
+enum SiteType {
+  TEMPLE
+  STUPA
+  MONASTERY
+  FORTRESS
+  PALACE
+  CAVE
+  CEMETERY
+  INSCRIPTION
+  RESERVOIR
+  MONUMENT
+  SETTLEMENT
+  OTHER
+}
