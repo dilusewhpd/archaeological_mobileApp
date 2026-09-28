@@ -1,4 +1,6 @@
-import * as SecureStore from "expo-secure-store";
+import { clearToken, readToken, storeToken } from "./tokenStorage";
+
+export { clearToken, readToken, storeToken } from "./tokenStorage";
 
 export type SiteStatus = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED";
 
@@ -67,7 +69,6 @@ type ApiEnvelope<T> = { success: boolean; message?: string; data: T };
 type ApiList<T> = { success: boolean; data: T[]; pagination?: { total: number } };
 type ServerFieldError = { field?: string; message?: string };
 
-const TOKEN_KEY = "field_officer_access_token";
 export const API_BASE_URL = String(
   process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.8.101:3000",
 ).replace(/\/$/, "");
@@ -90,21 +91,9 @@ export class ApiError extends Error {
   }
 }
 
-export async function storeToken(token: string) {
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
-}
-
-export async function clearToken() {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
-}
-
-export async function readToken() {
-  return SecureStore.getItemAsync(TOKEN_KEY);
-}
-
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  const token = await SecureStore.getItemAsync(TOKEN_KEY);
+  const token = await readToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
